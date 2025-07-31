@@ -203,6 +203,10 @@ export function mapOpenApiSchemaToJsonSchema(
       } else if (!jsonSchema.type) {
         jsonSchema.type = 'null';
       }
+    } else {
+      if (Array.isArray(jsonSchema.type) && jsonSchema.type.length === 1) {
+        jsonSchema.type = jsonSchema.type[0];
+      }
     }
 
     // Recursively process object properties
