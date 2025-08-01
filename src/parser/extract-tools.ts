@@ -4,7 +4,7 @@
 import { OpenAPIV3 } from 'openapi-types';
 import type { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 import { generateOperationId } from '../utils/code-gen.js';
-import { McpToolDefinition } from '../types/index.js';
+import { CliOptions, McpToolDefinition } from '../types/index.js';
 
 /**
  * Extracts tool definitions from an OpenAPI document
@@ -12,7 +12,7 @@ import { McpToolDefinition } from '../types/index.js';
  * @param api OpenAPI document
  * @returns Array of MCP tool definitions
  */
-export function extractToolsFromApi(api: OpenAPIV3.Document): McpToolDefinition[] {
+export function extractToolsFromApi(api: OpenAPIV3.Document, simplifyTypes?: string): McpToolDefinition[] {
   const tools: McpToolDefinition[] = [];
   const usedNames = new Set<string>();
   const globalSecurity = api.security || [];
@@ -46,7 +46,7 @@ export function extractToolsFromApi(api: OpenAPIV3.Document): McpToolDefinition[
 
       // Generate input schema and extract parameters
       const { inputSchema, parameters, requestBodyContentType } =
-        generateInputSchemaAndDetails(operation);
+        generateInputSchemaAndDetails(operation, simplifyTypes);
 
       // Extract parameter details for execution
       const executionParameters = parameters.map((p) => ({ name: p.name, in: p.in }));
@@ -80,7 +80,7 @@ export function extractToolsFromApi(api: OpenAPIV3.Document): McpToolDefinition[
  * @param operation OpenAPI operation object
  * @returns Input schema, parameters, and request body content type
  */
-export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObject): {
+export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObject, simplifyTypes?: string): {
   inputSchema: JSONSchema7 | boolean;
   parameters: OpenAPIV3.ParameterObject[];
   requestBodyContentType?: string;
@@ -96,7 +96,7 @@ export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObje
   allParameters.forEach((param) => {
     if (!param.name || !param.schema) return;
 
-    const paramSchema = mapOpenApiSchemaToJsonSchema(param.schema as OpenAPIV3.SchemaObject);
+    const paramSchema = mapOpenApiSchemaToJsonSchema(param.schema as OpenAPIV3.SchemaObject, undefined, simplifyTypes);
     if (typeof paramSchema === 'object') {
       paramSchema.description = param.description || paramSchema.description;
     }
@@ -158,7 +158,8 @@ export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObje
  */
 export function mapOpenApiSchemaToJsonSchema(
   schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
-  seen: WeakSet<object> = new WeakSet()
+  seen: WeakSet<object> = new WeakSet(),
+  simplifyTypes?: string
 ): JSONSchema7 | boolean {
   // Handle reference objects
   if ('$ref' in schema) {
@@ -204,7 +205,7 @@ export function mapOpenApiSchemaToJsonSchema(
         jsonSchema.type = 'null';
       }
     } else {
-      if (Array.isArray(jsonSchema.type) && jsonSchema.type.length === 1) {
+      if (Array.isArray(jsonSchema.type) && jsonSchema.type.length === 1 && simplifyTypes) {
         jsonSchema.type = jsonSchema.type[0];
       }
     }
@@ -217,7 +218,8 @@ export function mapOpenApiSchemaToJsonSchema(
         if (typeof propSchema === 'object' && propSchema !== null) {
           mappedProps[key] = mapOpenApiSchemaToJsonSchema(
             propSchema as OpenAPIV3.SchemaObject,
-            seen
+            seen,
+            simplifyTypes
           );
         } else if (typeof propSchema === 'boolean') {
           mappedProps[key] = propSchema;
@@ -235,7 +237,8 @@ export function mapOpenApiSchemaToJsonSchema(
     ) {
       jsonSchema.items = mapOpenApiSchemaToJsonSchema(
         jsonSchema.items as OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
-        seen
+        seen,
+        simplifyTypes
       );
     }
     return jsonSchema;

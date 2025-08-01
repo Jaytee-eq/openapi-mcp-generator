@@ -29,6 +29,8 @@ export interface CliOptions {
   transport?: TransportType;
   /** Server port (for web and streamable-http transports) */
   port?: number;
+  /** Flatten single-element type arrays in the JSON schema to their single value */
+  simplifyTypes?: string;
 }
 
 /**
