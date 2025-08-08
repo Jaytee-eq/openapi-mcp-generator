@@ -12,7 +12,10 @@ import { CliOptions, McpToolDefinition } from '../types/index.js';
  * @param api OpenAPI document
  * @returns Array of MCP tool definitions
  */
-export function extractToolsFromApi(api: OpenAPIV3.Document, simplifyTypes?: string): McpToolDefinition[] {
+export function extractToolsFromApi(
+  api: OpenAPIV3.Document,
+  simplifyTypes?: string
+): McpToolDefinition[] {
   const tools: McpToolDefinition[] = [];
   const usedNames = new Set<string>();
   const globalSecurity = api.security || [];
@@ -45,8 +48,10 @@ export function extractToolsFromApi(api: OpenAPIV3.Document, simplifyTypes?: str
         operation.description || operation.summary || `Executes ${method.toUpperCase()} ${path}`;
 
       // Generate input schema and extract parameters
-      const { inputSchema, parameters, requestBodyContentType } =
-        generateInputSchemaAndDetails(operation, simplifyTypes);
+      const { inputSchema, parameters, requestBodyContentType } = generateInputSchemaAndDetails(
+        operation,
+        simplifyTypes
+      );
 
       // Extract parameter details for execution
       const executionParameters = parameters.map((p) => ({ name: p.name, in: p.in }));
@@ -80,7 +85,10 @@ export function extractToolsFromApi(api: OpenAPIV3.Document, simplifyTypes?: str
  * @param operation OpenAPI operation object
  * @returns Input schema, parameters, and request body content type
  */
-export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObject, simplifyTypes?: string): {
+export function generateInputSchemaAndDetails(
+  operation: OpenAPIV3.OperationObject,
+  simplifyTypes?: string
+): {
   inputSchema: JSONSchema7 | boolean;
   parameters: OpenAPIV3.ParameterObject[];
   requestBodyContentType?: string;
@@ -96,7 +104,11 @@ export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObje
   allParameters.forEach((param) => {
     if (!param.name || !param.schema) return;
 
-    const paramSchema = mapOpenApiSchemaToJsonSchema(param.schema as OpenAPIV3.SchemaObject, undefined, simplifyTypes);
+    const paramSchema = mapOpenApiSchemaToJsonSchema(
+      param.schema as OpenAPIV3.SchemaObject,
+      undefined,
+      simplifyTypes
+    );
     if (typeof paramSchema === 'object') {
       paramSchema.description = param.description || paramSchema.description;
     }
