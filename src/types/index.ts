@@ -35,6 +35,8 @@ export interface CliOptions {
    * false = exclude by default unless x-mcp explicitly enables.
    */
   defaultInclude?: boolean;
+  /** Flatten single-element type arrays in the JSON schema to their single value */
+  simplifyTypes?: string;
 }
 
 /**

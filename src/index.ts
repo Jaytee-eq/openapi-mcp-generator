@@ -87,6 +87,10 @@ program
     true
   )
   .option('--force', 'Overwrite existing files without prompting')
+  .option(
+    '-st, --simplifyTypes',
+    'Flatten single-element type arrays in the JSON schema to their single value'
+  )
   .version(pkg.version) // Match package.json version
   .action((options) => {
     runGenerator(options).catch((error) => {
