@@ -74,7 +74,7 @@ program
   )
   .option('--force', 'Overwrite existing files without prompting')
   .option(
-    '--simplifyTypes',
+    '-st, --simplifyTypes',
     'Flatten single-element type arrays in the JSON schema to their single value'
   )
   .version(pkg.version) // Match package.json version
