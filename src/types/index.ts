@@ -29,6 +29,12 @@ export interface CliOptions {
   transport?: TransportType;
   /** Server port (for web and streamable-http transports) */
   port?: number;
+  /**
+   * Default behavior for x-mcp filtering.
+   * true (default) = include by default when x-mcp is missing or invalid;
+   * false = exclude by default unless x-mcp explicitly enables.
+   */
+  defaultInclude?: boolean;
   /** Flatten single-element type arrays in the JSON schema to their single value */
   simplifyTypes?: string;
 }

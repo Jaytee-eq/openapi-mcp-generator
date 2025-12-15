@@ -24,6 +24,13 @@ export interface GetToolsOptions {
 
   /** Optional filter function to exclude tools based on custom criteria */
   filterFn?: (tool: McpToolDefinition) => boolean;
+
+  /** Default behavior for x-mcp filtering (default: true = include by default) */
+  defaultInclude?: boolean;
+}
+
+function isOpenApiDocument(spec: string | OpenAPIV3.Document): spec is OpenAPIV3.Document {
+  return typeof spec === 'object' && spec !== null && 'openapi' in spec;
 }
 
 /**
@@ -34,17 +41,19 @@ export interface GetToolsOptions {
  * @returns Promise that resolves to an array of tool definitions
  */
 export async function getToolsFromOpenApi(
-  specPathOrUrl: string,
+  specPathOrUrl: string | OpenAPIV3.Document,
   options: GetToolsOptions = {}
 ): Promise<McpToolDefinition[]> {
   try {
     // Parse the OpenAPI spec
-    const api = options.dereference
-      ? ((await SwaggerParser.dereference(specPathOrUrl)) as OpenAPIV3.Document)
-      : ((await SwaggerParser.parse(specPathOrUrl)) as OpenAPIV3.Document);
+    const api = isOpenApiDocument(specPathOrUrl)
+      ? specPathOrUrl
+      : options.dereference
+        ? ((await SwaggerParser.dereference(specPathOrUrl)) as OpenAPIV3.Document)
+        : ((await SwaggerParser.parse(specPathOrUrl)) as OpenAPIV3.Document);
 
     // Extract tools from the API
-    const allTools = extractToolsFromApi(api);
+    const allTools = extractToolsFromApi(api, options.defaultInclude ?? true);
 
     // Add base URL to each tool
     const baseUrl = determineBaseUrl(api, options.baseUrl);
@@ -71,7 +80,8 @@ export async function getToolsFromOpenApi(
   } catch (error) {
     // Provide more context for the error
     if (error instanceof Error) {
-      throw new Error(`Failed to extract tools from OpenAPI: ${error.message}`);
+      // Preserve original stack/context
+      throw new Error(`Failed to extract tools from OpenAPI: ${error.message}`, { cause: error });
     }
     throw error;
   }

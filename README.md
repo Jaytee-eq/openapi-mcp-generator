@@ -48,16 +48,17 @@ openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir -
 
 ### CLI Options
 
-| Option             | Alias | Description                                                                    | Default                           |
-| ------------------ | ----- | ------------------------------------------------------------------------------ | --------------------------------- |
-| `--input`          | `-i`  | Path or URL to OpenAPI specification (YAML or JSON)                            | **Required**                      |
-| `--output`         | `-o`  | Directory to output the generated MCP project                                  | **Required**                      |
-| `--server-name`    | `-n`  | Name of the MCP server (`package.json:name`)                                   | OpenAPI title or `mcp-api-server` |
-| `--server-version` | `-v`  | Version of the MCP server (`package.json:version`)                             | OpenAPI version or `1.0.0`        |
-| `--base-url`       | `-b`  | Base URL for API requests. Required if OpenAPI `servers` missing or ambiguous. | Auto-detected if possible         |
-| `--transport`      | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`           | `"stdio"`                         |
-| `--port`           | `-p`  | Port for web-based transports                                                  | `3000`                            |
-| `--force`          |       | Overwrite existing files in the output directory without confirmation          | `false`                           |
+| Option              | Alias | Description                                                                                                                                    | Default                           |
+| ------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `--input`           | `-i`  | Path or URL to OpenAPI specification (YAML or JSON)                                                                                            | **Required**                      |
+| `--output`          | `-o`  | Directory to output the generated MCP project                                                                                                  | **Required**                      |
+| `--server-name`     | `-n`  | Name of the MCP server (`package.json:name`)                                                                                                   | OpenAPI title or `mcp-api-server` |
+| `--server-version`  | `-v`  | Version of the MCP server (`package.json:version`)                                                                                             | OpenAPI version or `1.0.0`        |
+| `--base-url`        | `-b`  | Base URL for API requests. Required if OpenAPI `servers` missing or ambiguous.                                                                 | Auto-detected if possible         |
+| `--transport`       | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`                                                                           | `"stdio"`                         |
+| `--port`            | `-p`  | Port for web-based transports                                                                                                                  | `3000`                            |
+| `--default-include` |       | Default behavior for x-mcp filtering. Accepts `true` or `false` (case-insensitive). `true` = include by default, `false` = exclude by default. | `true`                            |
+| `--force`           |       | Overwrite existing files in the output directory without confirmation                                                                          | `false`                           |
 | `--simplifyTypes`  | `-st` | Flatten single-element type arrays in the JSON schema to their single value    | `false`                           |
 
 ## 📦 Programmatic API
@@ -165,6 +166,38 @@ Configure auth credentials in your environment:
 | Bearer     | `BEARER_TOKEN_<SCHEME_NAME>`                                                                       |
 | Basic Auth | `BASIC_USERNAME_<SCHEME_NAME>`, `BASIC_PASSWORD_<SCHEME_NAME>`                                     |
 | OAuth2     | `OAUTH_CLIENT_ID_<SCHEME_NAME>`, `OAUTH_CLIENT_SECRET_<SCHEME_NAME>`, `OAUTH_SCOPES_<SCHEME_NAME>` |
+
+---
+
+## 🔎 Filtering Endpoints with OpenAPI Extensions
+
+You can control which operations are exposed as MCP tools using a vendor extension flag `x-mcp`. This extension is supported at the root, path, and operation levels. By default, endpoints are included unless explicitly excluded.
+
+- Extension: `x-mcp: true | false`
+- Default: `true` (include by default)
+- Precedence: operation > path > root (first non-undefined wins)
+- CLI option: `--default-include false` to change default to exclude by default
+
+Examples:
+
+```yaml
+# Optional root-level default
+x-mcp: true
+
+paths:
+  /pets:
+    x-mcp: false # exclude all ops under /pets
+    get:
+      x-mcp: true # include this operation anyway
+
+  /users/{id}:
+    get:
+      # no x-mcp -> included by default
+```
+
+This uses standard OpenAPI extensions (x-… fields). See the [OpenAPI Extensions guide](https://swagger.io/docs/specification/v3_0/openapi-extensions/) for details.
+
+Note: `x-mcp` must be a boolean or the strings `"true"`/`"false"` (case-insensitive). Other values are ignored in favor of higher-precedence or default behavior.
 
 ---
 

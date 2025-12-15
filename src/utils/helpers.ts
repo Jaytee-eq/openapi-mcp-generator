@@ -1,6 +1,7 @@
 /**
  * General helper utilities for OpenAPI to MCP generator
  */
+import { OpenAPIV3 } from 'openapi-types';
 
 /**
  * Safely stringify a JSON object with proper error handling
@@ -109,4 +110,64 @@ export function formatComment(str: string, maxLineLength: number = 80): string {
   }
 
   return lines.join('\n * ');
+}
+
+/**
+ * Normalize a value to boolean if it looks like a boolean; otherwise undefined.
+ */
+export function normalizeBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+    return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * Determine if an operation should be included in MCP generation based on x-mcp.
+ * Precedence: operation > path > root; uses provided default when all undefined.
+ */
+export function shouldIncludeOperationForMcp(
+  api: OpenAPIV3.Document,
+  pathItem: OpenAPIV3.PathItemObject,
+  operation: OpenAPIV3.OperationObject,
+  defaultInclude: boolean = true
+): boolean {
+  const opRaw = (operation as any)['x-mcp'];
+  const opVal = normalizeBoolean(opRaw);
+  if (typeof opVal !== 'undefined') return opVal;
+  if (typeof opRaw !== 'undefined') {
+    console.warn(
+      `Invalid x-mcp value on operation '${operation.operationId ?? '[no operationId]'}':`,
+      opRaw,
+      `-> expected boolean or 'true'/'false'. Falling back to path/root/default.`
+    );
+  }
+
+  const pathRaw = (pathItem as any)['x-mcp'];
+  const pathVal = normalizeBoolean(pathRaw);
+  if (typeof pathVal !== 'undefined') return pathVal;
+  if (typeof pathRaw !== 'undefined') {
+    console.warn(
+      `Invalid x-mcp value on path item:`,
+      pathRaw,
+      `-> expected boolean or 'true'/'false'. Falling back to root/default.`
+    );
+  }
+
+  const rootRaw = (api as any)['x-mcp'];
+  const rootVal = normalizeBoolean(rootRaw);
+  if (typeof rootVal !== 'undefined') return rootVal;
+  if (typeof rootRaw !== 'undefined') {
+    console.warn(
+      `Invalid x-mcp value at API root:`,
+      rootRaw,
+      `-> expected boolean or 'true'/'false'. Falling back to defaultInclude=${defaultInclude}.`
+    );
+  }
+
+  return defaultInclude;
 }

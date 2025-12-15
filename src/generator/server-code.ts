@@ -25,7 +25,7 @@ export function generateMcpServerCode(
   serverVersion: string
 ): string {
   // Extract tools from API
-  const tools = extractToolsFromApi(api, options.simplifyTypes);
+  const tools = extractToolsFromApi(api, options.defaultInclude ?? true, options.simplifyTypes);
 
   // Determine base URL
   const determinedBaseUrl = determineBaseUrl(api, options.baseUrl);

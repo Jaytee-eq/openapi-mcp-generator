@@ -64,6 +64,20 @@ for (const tool of filteredTools) {
 }
 ```
 
+you can also provide a `OpenAPIV3.Document` to the parser:
+
+```typescript
+import { parser } from '@readme/openapi-parser';
+
+const api = await parser('https://petstore3.swagger.io/api/v3/openapi.json', {
+  dereference: {
+    circular: true,
+  },
+});
+
+const tools = await getToolsFromOpenApi(api);
+```
+
 ## Tool Definition Structure
 
 Each tool definition (`McpToolDefinition`) has the following properties:

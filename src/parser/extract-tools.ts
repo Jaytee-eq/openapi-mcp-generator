@@ -4,7 +4,8 @@
 import { OpenAPIV3 } from 'openapi-types';
 import type { JSONSchema7, JSONSchema7TypeName } from 'json-schema';
 import { generateOperationId } from '../utils/code-gen.js';
-import { CliOptions, McpToolDefinition } from '../types/index.js';
+import { McpToolDefinition } from '../types/index.js';
+import { shouldIncludeOperationForMcp } from '../utils/helpers.js';
 
 /**
  * Extracts tool definitions from an OpenAPI document
@@ -14,7 +15,8 @@ import { CliOptions, McpToolDefinition } from '../types/index.js';
  */
 export function extractToolsFromApi(
   api: OpenAPIV3.Document,
-  simplifyTypes?: string
+  defaultInclude: boolean = true,
+  simplifyTypes?: string,
 ): McpToolDefinition[] {
   const tools: McpToolDefinition[] = [];
   const usedNames = new Set<string>();
@@ -28,6 +30,37 @@ export function extractToolsFromApi(
     for (const method of Object.values(OpenAPIV3.HttpMethods)) {
       const operation = pathItem[method];
       if (!operation) continue;
+
+      // Apply x-mcp filtering, precedence: operation > path > root
+      try {
+        if (
+          !shouldIncludeOperationForMcp(
+            api,
+            pathItem as OpenAPIV3.PathItemObject,
+            operation,
+            defaultInclude
+          )
+        ) {
+          continue;
+        }
+      } catch (error) {
+        const loc = operation.operationId || `${method} ${path}`;
+        const extVal =
+          (operation as any)['x-mcp'] ?? (pathItem as any)['x-mcp'] ?? (api as any)['x-mcp'];
+        let extPreview: string;
+        try {
+          extPreview = JSON.stringify(extVal);
+        } catch {
+          extPreview = String(extVal);
+        }
+        console.warn(
+          `Error evaluating x-mcp extension for operation ${loc} (x-mcp=${extPreview}):`,
+          error
+        );
+        if (!defaultInclude) {
+          continue;
+        }
+      }
 
       // Generate a unique name for the tool
       let baseName = operation.operationId || generateOperationId(method, path);
