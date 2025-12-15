@@ -80,6 +80,10 @@ export function extractToolsFromApi(
       const description =
         operation.description || operation.summary || `Executes ${method.toUpperCase()} ${path}`;
 
+      // Determine security requirements
+      const securityRequirements =
+        operation.security === null ? globalSecurity : operation.security || globalSecurity;
+
       // Generate input schema and extract parameters
       const { inputSchema, parameters, requestBodyContentType } = generateInputSchemaAndDetails(
         operation,
@@ -88,10 +92,6 @@ export function extractToolsFromApi(
 
       // Extract parameter details for execution
       const executionParameters = parameters.map((p) => ({ name: p.name, in: p.in }));
-
-      // Determine security requirements
-      const securityRequirements =
-        operation.security === null ? globalSecurity : operation.security || globalSecurity;
 
       // Create the tool definition
       tools.push({
@@ -116,6 +116,7 @@ export function extractToolsFromApi(
  * Generates input schema and extracts parameter details from an operation
  *
  * @param operation OpenAPI operation object
+ * @param simplifyTypes Whether to simplify single-element type arrays
  * @returns Input schema, parameters, and request body content type
  */
 export function generateInputSchemaAndDetails(
@@ -185,6 +186,8 @@ export function generateInputSchemaAndDetails(
   }
 
   // Combine everything into a JSON Schema
+  // Note: Authentication is handled via session credentials (auth/setCredentials)
+  // not through per-request arguments
   const inputSchema: JSONSchema7 = {
     type: 'object',
     properties,

@@ -24,8 +24,8 @@ import type { Context } from 'hono';
 import type { SSEStreamingApi } from 'hono/streaming';
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
-// Import server configuration constants
-import { SERVER_NAME, SERVER_VERSION } from './index.js';
+// Import server configuration constants and session management
+import { SERVER_NAME, SERVER_VERSION, setCurrentSessionId, clearSessionCredentials } from './index.js';
 
 /**
 * Custom SSE Transport implementation using Hono's streaming API
@@ -95,6 +95,9 @@ async handlePostMessage(c: Context): Promise<Response> {
     return c.text('SSE connection closed', 400);
   }
   
+  // Set current session ID for credential lookups
+  setCurrentSessionId(this._sessionId);
+  
   try {
     // Parse and validate the message
     const body = await c.req.json();
@@ -127,6 +130,9 @@ async handlePostMessage(c: Context): Promise<Response> {
 }
 
 async close(): Promise<void> {
+  // Clear session credentials when connection closes
+  clearSessionCredentials(this._sessionId);
+  
   if (this.stream && !this.stream.closed) {
     this.stream.abort();
   }

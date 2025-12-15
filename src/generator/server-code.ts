@@ -7,7 +7,10 @@ import {
   generateCallToolHandler,
   generateListToolsHandler,
 } from '../utils/code-gen.js';
-import { generateExecuteApiToolFunction } from '../utils/security.js';
+import {
+  generateExecuteApiToolFunction,
+  generateAuthSetCredentialsHandler,
+} from '../utils/security.js';
 
 /**
  * Generates the TypeScript code for the MCP server
@@ -41,6 +44,9 @@ export function generateMcpServerCode(
   // Generate code for request handlers
   const callToolHandlerCode = generateCallToolHandler();
   const listToolsHandlerCode = generateListToolsHandler();
+
+  // Generate code for auth handlers (session-based credentials)
+  const authHandlersCode = generateAuthSetCredentialsHandler(api.components?.securitySchemes);
 
   // Determine which transport to include
   let transportImport = '';
@@ -152,9 +158,10 @@ ${toolDefinitionMapCode}
  */
 const securitySchemes = ${JSON.stringify(api.components?.securitySchemes || {}, null, 2).replace(/^/gm, '  ')};
 
+${executeApiToolFunctionCode}
+${authHandlersCode}
 ${listToolsHandlerCode}
 ${callToolHandlerCode}
-${executeApiToolFunctionCode}
 
 /**
  * Main function to start the server

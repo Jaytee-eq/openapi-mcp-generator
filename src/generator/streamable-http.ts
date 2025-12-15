@@ -22,8 +22,8 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { InitializeRequestSchema, JSONRPCError } from "@modelcontextprotocol/sdk/types.js";
 import { toReqRes, toFetchResponse } from 'fetch-to-node';
 
-// Import server configuration constants
-import { SERVER_NAME, SERVER_VERSION } from './index.js';
+// Import server configuration constants and session management
+import { SERVER_NAME, SERVER_VERSION, setCurrentSessionId, clearSessionCredentials } from './index.js';
 
 // Constants
 const SESSION_ID_HEADER_NAME = "mcp-session-id";
@@ -68,6 +68,9 @@ class MCPStreamableHttpServer {
       if (sessionId && this.transports[sessionId]) {
         const transport = this.transports[sessionId];
         
+        // Set current session ID for credential lookups
+        setCurrentSessionId(sessionId);
+        
         // Handle the request with the transport
         await transport.handleRequest(req, res, body);
         
@@ -105,9 +108,14 @@ class MCPStreamableHttpServer {
           console.error(\`New session established: \${newSessionId}\`);
           this.transports[newSessionId] = transport;
           
+          // Set current session ID for credential lookups
+          setCurrentSessionId(newSessionId);
+          
           // Set up clean-up for when the transport is closed
           transport.onclose = () => {
             console.error(\`Session closed: \${newSessionId}\`);
+            // Clear session credentials when session ends
+            clearSessionCredentials(newSessionId);
             delete this.transports[newSessionId];
           };
         }
